@@ -1,4 +1,16 @@
- /* USER CODE BEGIN Header */
+     void EXTI0_IRQHandler(void) {
+       if (EXTI_GetITStatus(EXTI_Line0) != RESET) {
+         if (GPIO_ReadInputData(GPIOA) & GPIO_PIN_1) { // Check if pin is high
+           // Rising edge detected
+         } else {
+           // Falling edge detected
+         }
+         EXTI_ClearITPendingBit(EXTI_Line0);
+       }
+     }
+
+
+/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file           : main.c
