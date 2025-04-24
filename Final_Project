@@ -1,3 +1,49 @@
+int main(void) {
+    setup_gpio();
+    setup_timer2();
+    setup_pwm_tim14();
+    setup_lcd();
+    enable_button_interrupt();
+
+    while (1) {
+        // Poll for button press (PA0 LOW) — could also use EXTI on falling edge
+        if (!(GPIOA->IDR & GPIO_IDR_0)) {
+            // Button is being pressed
+            TIM2->CNT = 0;                 // Reset timer
+            TIM2->CR1 |= TIM_CR1_CEN;      // Start timer
+            while (!(GPIOA->IDR & GPIO_IDR_0)); // Wait until release (optional debounce)
+        }
+
+        // If button was released, process the press
+        if (button_released) {
+            button_released = 0;
+
+            if (press_duration < DOT_THRESHOLD) {
+                // Do nothing (probably glitch)
+            } else if (press_duration < DASH_THRESHOLD) {
+                lcd_write("DOT");
+                start_ir_pwm();
+                delay_ms(200); // IR dot time
+                stop_ir_pwm();
+            } else if (press_duration < LETTER_SPACE_TH) {
+                lcd_write("DASH");
+                start_ir_pwm();
+                delay_ms(600); // IR dash time
+                stop_ir_pwm();
+            } else if (press_duration < WORD_SPACE_TH) {
+                lcd_write("SPACE");
+                // No IR for space, just delay
+                delay_ms(600);
+            } else {
+                lcd_write("NEW WORD");
+                delay_ms(1000);
+            }
+
+            delay_ms(200); // Inter-symbol delay
+        }
+    }
+}
+
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
