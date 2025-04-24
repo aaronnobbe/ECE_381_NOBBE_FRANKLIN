@@ -26,7 +26,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
-
+char duration;
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
@@ -41,7 +41,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-uint8_t buttonHigh = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -55,9 +55,12 @@ uint8_t buttonHigh = 0;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim16;
 /* USER CODE BEGIN EV */
 extern uint32_t timer_val;
+
+extern uint8_t buttonHigh;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -146,17 +149,20 @@ void SysTick_Handler(void)
 void EXTI0_1_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI0_1_IRQn 0 */
-if(HAL_GPIO_ReadPin(GPIOC, GPIO_Pin_0) == GPIO_PIN_SET){
+//if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_0) == GPIO_PIN_SET){
+//	if(buttonHigh == 0){
+//	buttonHigh = 1;
+//
+//	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+//
+//}
 	buttonHigh = 1;
-	
-	HAL_GPIO_TogglePin(GPIOC, GPIO_Pin_7);
-	
-}
-
-else if(HAL_GPIO_ReadPin(GPIOC, GPIO_Pin_0) == 0)
-{
-	buttonHigh = 0;
-}
+//else if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_0) == 0)
+//	else if(buttonHigh == 1)
+//{
+//	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, 0);
+//	buttonHigh = 0;
+//}
 
 
 
@@ -169,6 +175,20 @@ else if(HAL_GPIO_ReadPin(GPIOC, GPIO_Pin_0) == 0)
 }
 
 /**
+  * @brief This function handles TIM2 global interrupt.
+  */
+void TIM2_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM2_IRQn 0 */
+
+  /* USER CODE END TIM2_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim2);
+  /* USER CODE BEGIN TIM2_IRQn 1 */
+
+  /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
   * @brief This function handles TIM16 global interrupt.
   */
 void TIM16_IRQHandler(void)
@@ -178,19 +198,7 @@ void TIM16_IRQHandler(void)
   /* USER CODE END TIM16_IRQn 0 */
   HAL_TIM_IRQHandler(&htim16);
   /* USER CODE BEGIN TIM16_IRQn 1 */
-if(buttonHigh == 1) {
-	
-	HAL_TIM_Base_Start(&htim16);
-	
-	While(HAL_GPIO)
-	
-}
-else if(buttonHigh == 0) {
-	
-	HAL_TIM_Base_Stop(&htim16);
-	timer_val = __HAL_TIM_GET_COUNTER(&htim16);
-}
-  
+
   /* USER CODE END TIM16_IRQn 1 */
 }
 
