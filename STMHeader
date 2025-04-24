@@ -26,7 +26,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
-char duration;
+
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
@@ -58,9 +58,8 @@ char duration;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim16;
 /* USER CODE BEGIN EV */
-extern uint32_t timer_val;
-
 extern uint8_t buttonHigh;
+extern int duration;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -149,22 +148,22 @@ void SysTick_Handler(void)
 void EXTI0_1_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI0_1_IRQn 0 */
+	if(__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_0) != RESET) { //if button is pressed, trigger interrupt
+		if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_SET) { //if button is rising edge, perform this
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, 1);
 
-	if(buttonHigh == 0)
 
-	{
-	buttonHigh = 1;
+/*			__HAL_TIM_SET_COUNTER(&htim2, 0);
+			HAL_TIM_Base_Start(&htim2);*/
 
-	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
 
-	}
-
-	else if(buttonHigh == 1)
-
-	{
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, 0);
-	buttonHigh = 0;
-
+		}
+		else { //if button is falling edge
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, 0);
+			buttonHigh = 1;
+			//stop timer
+			//duration = TIM->CNT(&TIM2)
+		}
 	}
 
   /* USER CODE END EXTI0_1_IRQn 0 */
@@ -173,7 +172,6 @@ void EXTI0_1_IRQHandler(void)
 
   /* USER CODE END EXTI0_1_IRQn 1 */
 }
-
 /**
   * @brief This function handles TIM2 global interrupt.
   */
