@@ -20,6 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f0xx_it.h"
+#include <stdio.h>
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -55,11 +56,15 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim16;
-/* USER CODE BEGIN EV */
 extern uint8_t buttonHigh;
 extern int duration;
+extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim2;
+extern double sender_time;
+extern int buttonFlag;
+/* USER CODE BEGIN EV */
+
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -150,19 +155,24 @@ void EXTI0_1_IRQHandler(void)
   /* USER CODE BEGIN EXTI0_1_IRQn 0 */
 	if(__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_0) != RESET) { //if button is pressed, trigger interrupt
 		if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_SET) { //if button is rising edge, perform this
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, 1);
 
+			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_2);//Stop TIM3 PWM Signal on FALLING edge. Stop tim16
 
-/*			__HAL_TIM_SET_COUNTER(&htim2, 0);
-			HAL_TIM_Base_Start(&htim2);*/
+/*			HAL_TIM_Base_Stop(&htim2);
+
+			sender_time = __HAL_TIM_GET_COUNTER(&htim2);
+
+			__HAL_TIM_SET_COUNTER(&htim2, 0);*/
+
 
 
 		}
 		else { //if button is falling edge
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, 0);
-			buttonHigh = 1;
-			//stop timer
-			//duration = TIM->CNT(&TIM2)
+			
+			HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); //Start PWM signal on RISING edge. Start tim16 here to refresh and display on LCD
+
+			/*HAL_TIM_Base_Start(&htim2);*/
+
 		}
 	}
 
@@ -171,19 +181,6 @@ void EXTI0_1_IRQHandler(void)
   /* USER CODE BEGIN EXTI0_1_IRQn 1 */
 
   /* USER CODE END EXTI0_1_IRQn 1 */
-}
-/**
-  * @brief This function handles TIM2 global interrupt.
-  */
-void TIM2_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM2_IRQn 0 */
-
-  /* USER CODE END TIM2_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim2);
-  /* USER CODE BEGIN TIM2_IRQn 1 */
-
-  /* USER CODE END TIM2_IRQn 1 */
 }
 
 /**
