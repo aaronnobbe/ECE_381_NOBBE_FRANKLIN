@@ -165,7 +165,7 @@ void EXTI0_1_IRQHandler(void)
         }
         else
         {
-            // Button is being released
+            // Button is being released stop timer and take the value
             HAL_TIM_Base_Stop(&htim6);
             release_time = __HAL_TIM_GET_COUNTER(&htim6);
             button_pressed = 0;
@@ -187,7 +187,7 @@ void EXTI0_1_IRQHandler(void)
                 signal = '/';
             }
 
-            // Write to SRAM
+            // Write to SRAM to store
             write_sram_char(morse_sram_index, signal);
 
             // Read back for verification
@@ -202,7 +202,7 @@ void EXTI0_1_IRQHandler(void)
                 HAL_UART_Transmit(&huart1, (uint8_t*)debug_msg, strlen(debug_msg), 100);
             }
 
-            morse_sram_index++;
+            morse_sram_index++; // increment the sram index to avoid over write
         }
     }
 
