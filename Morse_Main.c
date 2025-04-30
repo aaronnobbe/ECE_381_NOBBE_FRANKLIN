@@ -107,7 +107,6 @@ MorseMap morse_table[] = {
 };
 
 
-
 int main(void)
 {
 
@@ -146,13 +145,13 @@ int main(void)
   __HAL_TIM_SET_AUTORELOAD(&htim6, 10000);
 
   char menu[] =
-    "\r\n==== Morse Code Menu ====\r\n"
+    "\r\n======== Morse Code Menu ========\r\n"
     "[p] Print stored Morse and decode\r\n"
-    "[c] Clear memory\r\n"
+    "[c] Clear Morse memory\r\n"
     "[r] Play Morse message via LEDs\r\n"
-    "[d] delete previous letter\r\n"
+    "[d] Delete previous morse character\r\n"
     "[h] Show this menu\r\n"
-    "===========================\r\n";
+    "=================================\r\n";
 
   HAL_UART_Transmit(&huart1, (uint8_t*)menu, strlen(menu), TIMEOUT);
   HAL_Delay(10); //This is dumb but SPI wasn't cool without it
@@ -162,7 +161,6 @@ int main(void)
   HAL_Delay(10); // again, for spi
   write_sram_char(0, 0); // Dummy write to initialize SRAM
   morse_sram_index = 0;
-
 
   /* USER CODE END 2 */
 
@@ -273,6 +271,7 @@ void replay_morse_sequence() {
                 break;
         }
     }
+    HAL_UART_Transmit(&huart1, (uint8_t*)"Replaying Morse through LEDs\r\n", 30, TIMEOUT);
 }
 
 char decode_morse_sequence(char *sequence)
