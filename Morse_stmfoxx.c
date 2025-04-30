@@ -175,7 +175,8 @@ void EXTI0_1_IRQHandler(void)
 
             if (release_time <= 35) {
                 // Skip noisy signals
-                HAL_UART_Transmit(&huart1, (uint8_t*)"Signal ignored\r\n", 16, 100);
+                char ignore_msg[64];
+            	sprintf(ignore_msg, "Signal: - | Duration: %lu ms | Index: %u | IGNORED\r\n", release_time, morse_sram_index);
                 return;
             } else if (release_time < 200) {
                 signal = '.';
