@@ -83,10 +83,10 @@ volatile uint8_t store_ready = 0;
 
 void write_sram_char(uint16_t addr, char data);
 char read_sram_char(uint16_t addr);
-
-
-
-
+void replay_morse_sequence();
+char decode_morse_sequence(char *sequence);
+void decode_and_print_morse();
+void delete_last_morse_char();
 
 typedef struct {
     const char *morse;
@@ -105,6 +105,175 @@ MorseMap morse_table[] = {
     {"....-", '4'}, {".....", '5'}, {"-....", '6'}, {"--...", '7'},
     {"---..", '8'}, {"----.", '9'}
 };
+
+
+
+int main(void)
+{
+
+  /* USER CODE BEGIN 1 */
+
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
+  SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_SPI2_Init();
+  MX_USART1_UART_Init();
+  MX_TIM6_Init();
+  MX_TIM7_Init();
+  /* USER CODE BEGIN 2 */
+ // HAL_GPIO_WritePin(nCS_SRAM_GPIO_Port, nCS_SRAM_Pin, 1);
+ // HAL_GPIO_WritePin(NCS_MEMS_SPI_GPIO_Port, NCS_MEMS_SPI_Pin,1);
+
+  __HAL_TIM_SET_PRESCALER(&htim6, 47999); //Timer16 PWM Initialization for LCD, Start timer here to activate refresh.
+  __HAL_TIM_SET_AUTORELOAD(&htim6, 10000);
+
+  char menu[] =
+    "\r\n==== Morse Code Menu ====\r\n"
+    "[p] Print stored Morse and decode\r\n"
+    "[c] Clear memory\r\n"
+    "[r] Play Morse message via LEDs\r\n"
+    "[d] delete previous letter\r\n"
+    "[h] Show this menu\r\n"
+    "===========================\r\n";
+
+  HAL_UART_Transmit(&huart1, (uint8_t*)menu, strlen(menu), TIMEOUT);
+  HAL_Delay(10); //This is dumb but SPI wasn't cool without it
+  uint8_t cmd;
+
+
+  HAL_Delay(10); // again, for spi
+  write_sram_char(0, 0); // Dummy write to initialize SRAM
+  morse_sram_index = 0;
+
+
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+  while (1)
+  {
+
+      if (HAL_UART_Receive(&huart1, &cmd, 1, HAL_MAX_DELAY) == HAL_OK)
+      {
+          switch (cmd)
+          {
+              case 'p'://decode the morse message and print it
+                  decode_and_print_morse();
+                  break;
+
+              case 'c': // clear the sram
+                  for (uint16_t i = 0; i < morse_sram_index; i++)
+                      write_sram_char(i, 0);  // optional: overwrite with nulls
+                  morse_sram_index = 0;
+                  HAL_UART_Transmit(&huart1, (uint8_t*)"Memory cleared.\r\n", 17, TIMEOUT);
+                  break;
+
+              case 'r'://play the morse sequence on LEDs
+
+            	  replay_morse_sequence();
+                  break;
+
+              case 'd':  // backspace/delete only deletes the previous morse char, not the translated letter
+            	  delete_last_morse_char();
+                  break;
+
+              case 'h':
+              default:
+                  HAL_UART_Transmit(&huart1, (uint8_t*)menu, strlen(menu), TIMEOUT);
+                  break;
+          }
+      }
+  }
+
+
+  /* USER CODE END 3 */
+}
+
+
+// SRAM WRITE
+void write_sram_char(uint16_t addr, char data)
+{
+    uint8_t tx[4] = {
+        SRAM_WRITE,
+        (uint8_t)(addr >> 8),
+        (uint8_t)(addr & 0xFF),
+        (uint8_t)data
+    };
+    HAL_GPIO_WritePin(nCS_SRAM_GPIO_Port, nCS_SRAM_Pin, GPIO_PIN_RESET);
+    HAL_SPI_Transmit(&hspi2, tx, 4, TIMEOUT);
+    HAL_GPIO_WritePin(nCS_SRAM_GPIO_Port, nCS_SRAM_Pin, GPIO_PIN_SET);
+}
+
+// SRAM READ
+char read_sram_char(uint16_t addr)
+{
+    uint8_t tx[4] = {
+        SRAM_READ,
+        (uint8_t)(addr >> 8),
+        (uint8_t)(addr & 0xFF),
+        0x00
+    };
+    uint8_t rx[4] = {0};
+
+    HAL_GPIO_WritePin(nCS_SRAM_GPIO_Port, nCS_SRAM_Pin, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(&hspi2, tx, rx, 4, TIMEOUT);
+    HAL_GPIO_WritePin(nCS_SRAM_GPIO_Port, nCS_SRAM_Pin, GPIO_PIN_SET);
+
+    return (char)rx[3];
+}
+
+void replay_morse_sequence() {
+    for (uint16_t i = 0; i < morse_sram_index; i++) {
+        char c = read_sram_char(i);
+
+        switch (c) {
+            case '.':
+                // Blink PC8 for dot
+                HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
+                HAL_Delay(200);
+                HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+                HAL_Delay(200); // Gap between signals
+                break;
+
+            case '-':
+                // Blink PC9 for dash
+                HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+                HAL_Delay(600);
+                HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+                HAL_Delay(200); // Gap between signals
+                break;
+
+            case ' ':
+                HAL_Delay(400); // Space between letters
+                break;
+
+            case '/':
+                HAL_Delay(1000); // Space between words
+                break;
+
+            default:
+                break;
+        }
+    }
+}
 
 char decode_morse_sequence(char *sequence)
 {
@@ -159,168 +328,15 @@ void decode_and_print_morse()
     HAL_UART_Transmit(&huart1, (uint8_t*)"\r\n", 2, TIMEOUT);
 }
 
-void replay_morse_sequence() {
-    for (uint16_t i = 0; i < morse_sram_index; i++) {
-        char c = read_sram_char(i);
-
-        switch (c) {
-            case '.':
-                // Blink PC8 for dot
-                HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
-                HAL_Delay(200);
-                HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
-                HAL_Delay(200); // Gap between signals
-                break;
-
-            case '-':
-                // Blink PC9 for dash
-                HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
-                HAL_Delay(600);
-                HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
-                HAL_Delay(200); // Gap between signals
-                break;
-
-            case ' ':
-                HAL_Delay(400); // Space between letters
-                break;
-
-            case '/':
-                HAL_Delay(1000); // Space between words
-                break;
-
-            default:
-                break;
-        }
+void delete_last_morse_char() {
+    if (morse_sram_index > 0) {
+        morse_sram_index--;
+        write_sram_char(morse_sram_index, 0);
+        HAL_UART_Transmit(&huart1, (uint8_t*)"Last character deleted.\r\n", 26, TIMEOUT);
+    } else {
+        HAL_UART_Transmit(&huart1, (uint8_t*)"Nothing to delete.\r\n", 21, TIMEOUT);
     }
 }
-
-int main(void)
-{
-
-  /* USER CODE BEGIN 1 */
-
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_SPI2_Init();
-  MX_USART1_UART_Init();
-  MX_TIM6_Init();
-  MX_TIM7_Init();
-  /* USER CODE BEGIN 2 */
- // HAL_GPIO_WritePin(nCS_SRAM_GPIO_Port, nCS_SRAM_Pin, 1);
- // HAL_GPIO_WritePin(NCS_MEMS_SPI_GPIO_Port, NCS_MEMS_SPI_Pin,1);
-
-  __HAL_TIM_SET_PRESCALER(&htim6, 47999); //Timer16 PWM Initialization for LCD, Start timer here to activate refresh.
-  __HAL_TIM_SET_AUTORELOAD(&htim6, 10000);
-
-  char menu[] =
-    "\r\n==== Morse Code Menu ====\r\n"
-    "[p] Print stored Morse and decode\r\n"
-    "[c] Clear memory\r\n"
-    "[r] Play Morse message via LEDs\r\n"
-    "[h] Show this menu\r\n"
-    "===========================\r\n";
-
-  HAL_UART_Transmit(&huart1, (uint8_t*)menu, strlen(menu), TIMEOUT);
-  HAL_Delay(10); //This is dumb but SPI wasn't cool without it
-  uint8_t cmd;
-
-
-  HAL_Delay(10); // again, for spi
-  write_sram_char(0, 0); // Dummy write to initialize SRAM
-  morse_sram_index = 0;
-
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-
-      if (HAL_UART_Receive(&huart1, &cmd, 1, HAL_MAX_DELAY) == HAL_OK)
-      {
-          switch (cmd)
-          {
-              case 'p':
-                  decode_and_print_morse();
-                  break;
-
-              case 'c':
-                  for (uint16_t i = 0; i < morse_sram_index; i++)
-                      write_sram_char(i, 0);  // optional: overwrite with nulls
-                  morse_sram_index = 0;
-                  HAL_UART_Transmit(&huart1, (uint8_t*)"Memory cleared.\r\n", 17, TIMEOUT);
-                  break;
-
-              case 'r':
-
-            	  replay_morse_sequence();
-                  break;
-
-              case 'h':
-              default:
-                  HAL_UART_Transmit(&huart1, (uint8_t*)menu, strlen(menu), TIMEOUT);
-                  break;
-          }
-      }
-  }
-
-
-  /* USER CODE END 3 */
-}
-
-
-// SRAM WRITE
-void write_sram_char(uint16_t addr, char data)
-{
-    uint8_t tx[4] = {
-        SRAM_WRITE,
-        (uint8_t)(addr >> 8),
-        (uint8_t)(addr & 0xFF),
-        (uint8_t)data
-    };
-    HAL_GPIO_WritePin(nCS_SRAM_GPIO_Port, nCS_SRAM_Pin, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(&hspi2, tx, 4, TIMEOUT);
-    HAL_GPIO_WritePin(nCS_SRAM_GPIO_Port, nCS_SRAM_Pin, GPIO_PIN_SET);
-}
-
-// SRAM READ
-char read_sram_char(uint16_t addr)
-{
-    uint8_t tx[4] = {
-        SRAM_READ,
-        (uint8_t)(addr >> 8),
-        (uint8_t)(addr & 0xFF),
-        0x00
-    };
-    uint8_t rx[4] = {0};
-
-    HAL_GPIO_WritePin(nCS_SRAM_GPIO_Port, nCS_SRAM_Pin, GPIO_PIN_RESET);
-    HAL_SPI_TransmitReceive(&hspi2, tx, rx, 4, TIMEOUT);
-    HAL_GPIO_WritePin(nCS_SRAM_GPIO_Port, nCS_SRAM_Pin, GPIO_PIN_SET);
-
-    return (char)rx[3];
-}
-
 /**
   * @brief System Clock Configuration
   * @retval None
