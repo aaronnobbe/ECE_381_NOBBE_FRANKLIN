@@ -47,8 +47,7 @@ TIM_HandleTypeDef htim7;
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-static const uint32_t TIMEOUT = 100;
-static const uint8_t RD_MASK = 0x80;
+
 char morse_sequence[10];
 uint8_t morse_index = 0;
 uint8_t ir_monitoring_enabled = 0;
@@ -124,6 +123,7 @@ void decode_and_print_morse()
         char c = read_sram_char(i);
         HAL_UART_Transmit(&huart1, (uint8_t*)&c, 1, TIMEOUT);
     }
+    HAL_UART_Transmit(&huart1, (uint8_t*)"\r\n", 2, TIMEOUT);
     HAL_UART_Transmit(&huart1, (uint8_t*)"\r\nDecoded Text: ", 16, TIMEOUT);
 
     char buffer[10] = {0};
@@ -255,7 +255,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-      uint8_t cmd;
+
       if (HAL_UART_Receive(&huart1, &cmd, 1, HAL_MAX_DELAY) == HAL_OK)
       {
           switch (cmd)
