@@ -173,7 +173,7 @@ void EXTI0_1_IRQHandler(void)
 
             char signal = '?';
 
-            if (release_time <= 35) {
+            if (release_time <= 40) {
                 // Skip noisy signals
                 char ignore_msg[64];
             	sprintf(ignore_msg, "Signal: - | Duration: %lu ms | Index: %u | IGNORED\r\n", release_time, morse_sram_index);
