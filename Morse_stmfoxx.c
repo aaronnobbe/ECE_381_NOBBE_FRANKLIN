@@ -148,61 +148,7 @@ void SysTick_Handler(void)
 /**
   * @brief This function handles EXTI line 0 and 1 interrupts.
   */
-//void EXTI0_1_IRQHandler(void)
-//{
-//  /* USER CODE BEGIN EXTI0_1_IRQn 0 */
-//
-//  /* USER CODE END EXTI0_1_IRQn 0 */
-//
-//
-//	    if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_0) != RESET)
-//	    {
-//	        __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_0);
-//
-//	        if (button_pressed == 0)
-//	        {
-//	            // Button is *being pressed* now (falling edge)
-//	            __HAL_TIM_SET_COUNTER(&htim6, 0);  // Reset timer
-//	            HAL_TIM_Base_Start(&htim6);
-//	            button_pressed = 1;
-//	        }
-//	        else
-//	        {
-//	            // Button is *being released* now (rising edge)
-//	            HAL_TIM_Base_Stop(&htim6);
-//	            release_time = __HAL_TIM_GET_COUNTER(&htim6);
-//	            button_pressed = 0;
-//	            char signal = '?';
-//	            // Determine short (.) or long (-)
-//	            if (release_time <= 35){} //to avoid double presses without slowing down program
-//
-//	            else if (release_time < 200){
-//	                signal = '.'; // very short press
-//	            }
-//	            else if (release_time < 600) {
-//	                signal = '-'; // medium press
-//	            }
-//	            else if (release_time < 1000) {
-//	                signal = ' '; // longer press
-//	            }
-//	            else {
-//	                signal = '/'; // very long press
-//	            }
-//	            write_sram_char(morse_sram_index++, signal);
-//
-//	            char debug_msg[64];
-//	            sprintf(debug_msg, "Signal: %c | Duration: %lu ms\r\n", signal, release_time);
-//	            HAL_UART_Transmit(&huart1, (uint8_t*)debug_msg, strlen(debug_msg), 100);
-//	        }
-//	    }
-//
-//
-//
-//
-//  /* USER CODE BEGIN EXTI0_1_IRQn 1 */
-//
-//  /* USER CODE END EXTI0_1_IRQn 1 */
-//}
+
 
 void EXTI0_1_IRQHandler(void)
 {
